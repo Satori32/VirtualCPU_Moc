@@ -5,7 +5,7 @@
 #include <tuple>
 #include <memory>
 
-#include <iomanip>
+#include <iomanip> 
 
 template<class Register=std::intmax_t,class Ops=std::int16_t>
 class VirtualCPU {
