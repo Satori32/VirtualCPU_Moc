@@ -100,6 +100,7 @@ public:
 		Null = 0,
 		PushStack,
 		PopStack,
+		DropStack,
 		ToEnd,
 
 	};
@@ -173,6 +174,9 @@ public:
 		switch (IO) {
 			{
 		case TestCPU::IntOps::Null:
+			break;
+		case TestCPU::IntOps::DropStack:
+			Stack.pop_back();
 			break;
 		case TestCPU::IntOps::PushStack:
 			Stack.push_back(R);
