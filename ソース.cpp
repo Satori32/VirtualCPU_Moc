@@ -7,12 +7,12 @@
 
 #include <iomanip> 
 
-template<class Register=std::intmax_t,class Ops=std::int16_t>
+template<class Register=std::intmax_t,class Ops=std::int16_t,class Nim=std::tuple<Ops,  Register, Register> >
 class VirtualCPU {
 public:
 	typedef Register Register;
 	typedef Ops Ops;
-	typedef std::tuple<Ops,  Register, Register> Nim;
+//	typedef std::tuple<Ops,  Register, Register> Nim;
 
 	typedef std::shared_ptr<VirtualCPU> spVirtualCPU;
 
@@ -33,7 +33,7 @@ public:
 		return true;
 	}
 
-	bool Push(const Nim& N) {//netburst architectuer
+	virtual bool Push(const Nim& N) {//netburst architectuer
 		Q.push_back(N);
 		return true;
 	}
@@ -44,21 +44,24 @@ public:
 
 	virtual bool Update() = 0;//Nimonic instraction.
 
-	const Register& Registers(std::size_t P) {
+	const Register& Registers(std::size_t P)const {
 		return R[P];
 	}
 
-	std::size_t MemorySize() {
+	std::size_t MemorySize() const{
 		return Memory.size();
 	}
 
 	Register& operator [](std::size_t I) {
 		return Memory[I];
 	}
-	std::size_t RegisterSize() {
+	const Register& operator [](std::size_t I)const {
+		return Memory[I];
+	}
+	std::size_t RegisterSize() const {
 		return R.size();
 	}
-	bool IsEnd() {
+	bool IsEnd() const {
 		return ToEnd;
 	}
 
@@ -86,6 +89,9 @@ enum class Ops : std::uint8_t {
 	Mul,
 	Div,
 	Mod,
+	Label,//Label for Jamp.
+	JNZ,//jamp if non zero.
+	JIZ,//jamp if zero
 	Int,//Special Service.
 	Load,//from Memory.
 	Store,//To Memory
