@@ -12,7 +12,7 @@ class VirtualCPU {
 public:
 	typedef Register Register;
 	typedef Ops Ops;
-//	typedef std::tuple<Ops,  Register, Register> Nim;
+	typedef Nim Nim;//nimonic and parametors.
 
 	typedef std::shared_ptr<VirtualCPU> spVirtualCPU;
 
