@@ -89,9 +89,14 @@ enum class Ops : std::uint8_t {
 	Mul,
 	Div,
 	Mod,
+	Hit,//one of Bit Test
+	LShift,//bit shift left.
+	RShift,//bit shift right.
+	Set,//[RegisterPos,Value]//initialize Register.
 	Label,//Label for Jamp.
 	JNZ,//jamp if non zero.
 	JIZ,//jamp if zero
+	Test,//BitTest by tow value. answer is yet unknown.
 	Int,//Special Service.
 	Load,//from Memory.
 	Store,//To Memory
@@ -107,6 +112,7 @@ public:
 		PushStack,
 		PopStack,
 		DropStack,
+		DropChash,
 		ToEnd,
 
 	};
@@ -129,6 +135,9 @@ public:
 			break;
 		case Ops::Move:
 			R[std::get<1>(N)] = R[std::get<2>(N)];
+			break;
+		case Ops::Set:
+			R[std::get<1>(N)] = std::get<2>(N);
 			break;
 		case Ops::And:
 			R[0] = R[std::get<1>(N)] & R[std::get<2>(N)];
@@ -166,6 +175,20 @@ public:
 		case Ops::Mod:
 			R[0] = (R[std::get<1>(N)] % R[std::get<2>(N)]);
 			break;
+		case Ops::Test:
+			R[0] = ~(std::get<1>(N) ^ std::get<2>(N));
+			break;
+		case Ops::LShift:
+			R[0] = R[std::get<1>(N)] << std::get<2>(N);
+			break;
+		case Ops::RShift:
+			R[0] = R[std::get<1>(N)] >> std::get<2>(N);
+			break;
+		case Ops::Hit: {
+			Register A{ 1 };
+			R[0] = (R[std::get<1>(N)] & (A << std::get<2>(N))) ? 1 : 0;
+			break;
+		}
 		case Ops::Int:
 			IntegralService((IntOps)std::get<1>(N), std::get<2>(N));
 			break;
@@ -193,7 +216,10 @@ public:
 			break;
 		case TestCPU::IntOps::ToEnd:
 			VirtualCPU::ToEnd = (Re != 0);
-			return true;
+			break;
+		case TestCPU::IntOps::DropChash:
+			Q.clear();
+			break;
 		default:
 			return false;
 			break;
@@ -234,6 +260,9 @@ int main() {
 	TC->Push({ Ops::Mul ,1 ,2 });
 	TC->Push({ Ops::Div ,1,2 });
 	TC->Push({ Ops::Mod ,1 ,2 });
+
+	TC->Push({ Ops::Set ,3 ,0xbeef });
+	TC->Push({ Ops::Hit ,3 ,2 });
 
 	TC->Push({ Ops::Int ,(TestCPU::Register)TestCPU::IntOps::ToEnd ,1 });
 
