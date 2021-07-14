@@ -61,6 +61,12 @@ public:
 	std::size_t RegisterSize() const {
 		return R.size();
 	}
+	std::size_t StackSize() {
+		return Stack.size();
+	}
+	std::size_t QueueSize() {
+		return Q.size();
+	}
 	bool IsEnd() const {
 		return ToEnd;
 	}
@@ -68,7 +74,7 @@ public:
 protected:
 	
 	bool ToEnd = false;
-//	Register De{ 0 };//result register.
+//	Register AR{ 0 };//result register.
 	std::deque<Nim> Q;
 	std::vector<Register> R;
 	std::vector<Register> Memory;
@@ -90,6 +96,9 @@ enum class Ops : std::uint8_t {
 	Div,
 	Mod,
 	Hit,//one of Bit Test
+	RWin,//R is greater.
+	LWin,//L is greater.
+	BWin,//Both Win.
 	LShift,//bit shift left.
 	RShift,//bit shift right.
 	Set,//[RegisterPos,Value]//initialize Register.
@@ -101,6 +110,7 @@ enum class Ops : std::uint8_t {
 	Load,//from Memory.
 	Store,//To Memory
 	Move,//register to register.
+//	EEnd,//Terminater of Enum.
 };
 
 class TestCPU :public VirtualCPU<std::int16_t, Ops>
@@ -112,7 +122,7 @@ public:
 		PushStack,
 		PopStack,
 		DropStack,
-		DropChash,
+		DropCash,
 		ToEnd,
 
 	};
@@ -189,6 +199,15 @@ public:
 			R[0] = (R[std::get<1>(N)] & (A << std::get<2>(N))) ? 1 : 0;
 			break;
 		}
+		case Ops::RWin:
+			R[0] = (R[std::get<1>(N)] < std::get<2>(N)) ? 1 : 0;
+			break;
+		case Ops::LWin: 
+			R[0] = (R[std::get<1>(N)] >  std::get<2>(N)) ? 1 : 0;
+			break;
+		case Ops::BWin: ;
+			R[0] = (R[std::get<1>(N)] ==  std::get<2>(N))? 1 : 0;
+			break;
 		case Ops::Int:
 			IntegralService((IntOps)std::get<1>(N), std::get<2>(N));
 			break;
@@ -217,8 +236,12 @@ public:
 		case TestCPU::IntOps::ToEnd:
 			VirtualCPU::ToEnd = (Re != 0);
 			break;
-		case TestCPU::IntOps::DropChash:
+		case TestCPU::IntOps::DropCash:
+		{
+			decltype(Q)::value_type A = Q.front();
 			Q.clear();
+			Q.push_back(A);
+		}
 			break;
 		default:
 			return false;
