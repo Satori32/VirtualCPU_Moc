@@ -4,8 +4,12 @@
 #include <deque>
 #include <tuple>
 #include <memory>
+#include <algorithm>
 
 #include <iomanip> 
+
+//many test is not complete.confuse...
+//たのしい～！！が管理限界がちかいぞ・・・。
 
 template<class Register=std::intmax_t,class Ops=std::int16_t,class Nim=std::tuple<Ops,  Register, Register> >
 class VirtualCPU {
@@ -95,22 +99,27 @@ enum class Ops : std::uint8_t {
 	Mul,
 	Div,
 	Mod,
+	HighLimit,//Clamp HighLimit.
+	LowLimit,//Clamp LowLimit.
+	Swap,// swap to register and register.
+	//Clamp,//[Min,Max]
 	Hit,//one of Bit Test
-	RWin,//R is greater.
-	LWin,//L is greater.
-	BWin,//Both Win.
+	RGreater,//R is greater.
+	LGreater,//L is greater.
+	BGreater,//Both Win.
 	LShift,//bit shift left.
 	RShift,//bit shift right.
-	Set,//[RegisterPos,Value]//initialize Register.
+	RSet,//[RegisterPos,Value]//initialize Register.
+	MSet,//[MemoryPos,Value]//initialize memory.
 	Label,//Label for Jamp.
-	JNZ,//jamp if non zero.
-	JIZ,//jamp if zero
+	JNZ,//jamp if non zero.[Rsgister,Label].
+	JIZ,//jamp if zero.[Register,Label].
 	Test,//BitTest by tow value. answer is yet unknown.
 	Int,//Special Service.
 	Load,//from Memory.
 	Store,//To Memory
 	Move,//register to register.
-//	EEnd,//Terminater of Enum.
+	EnumEnd,//Terminater of this Enum.
 };
 
 class TestCPU :public VirtualCPU<std::int16_t, Ops>
@@ -123,6 +132,7 @@ public:
 		PopStack,
 		DropStack,
 		DropCash,
+		ReWindPC,
 		ToEnd,
 
 	};
@@ -130,8 +140,10 @@ public:
 
 		if (Q.size() == 0) { return false; }
 
-		auto& N = Q.front();
-		Q.pop_front();
+		if (PC >= Q.size()) { return false; }
+
+		auto& N = Q[PC++];
+		//Q.pop_front();
 
 		switch (std::get<0>(N))
 		{
@@ -146,8 +158,11 @@ public:
 		case Ops::Move:
 			R[std::get<1>(N)] = R[std::get<2>(N)];
 			break;
-		case Ops::Set:
+		case Ops::RSet:
 			R[std::get<1>(N)] = std::get<2>(N);
+			break;
+		case Ops::MSet:
+			Memory[std::get<1>(N)] = std::get<2>(N);
 			break;
 		case Ops::And:
 			R[0] = R[std::get<1>(N)] & R[std::get<2>(N)];
@@ -185,39 +200,94 @@ public:
 		case Ops::Mod:
 			R[0] = (R[std::get<1>(N)] % R[std::get<2>(N)]);
 			break;
+		case Ops::Swap: {
+			Register A = R[std::get<1>(N)];
+			R[std::get<1>(N)] = R[std::get<2>(N)];
+			R[std::get<2>(N)] = A;
+			break;
+		}
+		case Ops::HighLimit:
+			R[0] = std::min(R[std::get<1>(N)] ,  R[std::get<2>(N)]);
+			break;
+		case Ops::LowLimit:
+			R[0] = std::max(R[std::get<1>(N)] ,  R[std::get<2>(N)]);
+			break;
 		case Ops::Test:
-			R[0] = ~(std::get<1>(N) ^ std::get<2>(N));
+			R[0] = ~(R[std::get<1>(N)] ^ R[std::get<2>(N)]);
 			break;
 		case Ops::LShift:
-			R[0] = R[std::get<1>(N)] << std::get<2>(N);
+			R[0] = R[std::get<1>(N)] << R[std::get<2>(N)];
 			break;
 		case Ops::RShift:
-			R[0] = R[std::get<1>(N)] >> std::get<2>(N);
+			R[0] = R[std::get<1>(N)] >> R[std::get<2>(N)];
 			break;
 		case Ops::Hit: {
 			Register A{ 1 };
-			R[0] = (R[std::get<1>(N)] & (A << std::get<2>(N))) ? 1 : 0;
+			R[0] = (R[std::get<1>(N)] & (A << R[std::get<2>(N)])) ? 1 : 0;
 			break;
 		}
-		case Ops::RWin:
-			R[0] = (R[std::get<1>(N)] < std::get<2>(N)) ? 1 : 0;
+		case Ops::RGreater:
+			R[0] = (R[std::get<1>(N)] < R[std::get<2>(N)]) ? 1 : 0;
 			break;
-		case Ops::LWin: 
-			R[0] = (R[std::get<1>(N)] >  std::get<2>(N)) ? 1 : 0;
+		case Ops::LGreater: 
+			R[0] = (R[std::get<1>(N)] >  R[std::get<2>(N)]) ? 1 : 0;
 			break;
-		case Ops::BWin: ;
-			R[0] = (R[std::get<1>(N)] ==  std::get<2>(N))? 1 : 0;
+		case Ops::BGreater:
+			R[0] = (R[std::get<1>(N)] ==  R[std::get<2>(N)])? 1 : 0;
+			break;
+
+		case Ops::Label: {
+			std::tuple<std::size_t, Register> A{ PC, std::get<1>(N) };
+			auto it=std::find(LS.begin(), LS.end(),A);
+			
+			if (it == LS.end()) {
+				LS.push_back({ PC, std::get<1>(N) });
+				//std::sort(LS.begin(), LS.end());
+			}
+			break;
+		}
+		case Ops::JIZ:
+			if (!R[std::get<1>(N)]) {
+				for (auto& o : LS) {
+					if (std::get<1>(o) == std::get<2>(N)) {
+						PC = std::get<0>(o);
+					}
+				}
+			}
+			break;
+		case Ops::JNZ:
+			if (R[std::get<1>(N)]) {
+				for (auto& o : LS) {
+					if (std::get<1>(o) == std::get<2>(N)) {
+						PC = std::get<0>(o);
+					}
+				}
+			}
 			break;
 		case Ops::Int:
-			IntegralService((IntOps)std::get<1>(N), std::get<2>(N));
+			IntegralService(std::get<1>(N), R[std::get<2>(N)]);
 			break;
 		default:
+			Ops::EnumEnd;
 			return false;
+		/** /
+		case Ops::Clamp: {
+			if (R[std::get<1>(N)] > R[std::get<2>(N)]) {//i want to del this if.
+				Register A = std::get<1>(N);
+				std::get<2>(N) = std::get<1>(N);
+				std::get<1>(N) = A;
+			}
+			R[0] = std::min(R[std::get<2>(N)], std::max(R[std::get<1>(N)], R[0]));
+			break;
+		}	
+		/**/
 		}
 		return true;
 	}
 
-	bool IntegralService(IntOps IO, VirtualCPU::Register Re) {
+	bool IntegralService(VirtualCPU::Register SN, VirtualCPU::Register Re) {
+
+		IntOps IO = (IntOps)SN;
 
 		switch (IO) {
 			{
@@ -236,6 +306,9 @@ public:
 		case TestCPU::IntOps::ToEnd:
 			VirtualCPU::ToEnd = (Re != 0);
 			break;
+		case TestCPU::IntOps::ReWindPC:
+			PC = Re;
+			break;
 		case TestCPU::IntOps::DropCash:
 		{
 			decltype(Q)::value_type A = Q.front();
@@ -251,6 +324,9 @@ public:
 		}
 		return true;
 	}
+protected:
+	std::vector < std::tuple<std::size_t, Register>> LS;//label stack.
+	std::size_t PC{ 0 };
 };
 
 int main() {
@@ -258,10 +334,14 @@ int main() {
 
 	TC->Initialize(16, 256);
 
-	(*TC)[0] = 0x1001;
-	(*TC)[1] = 0x1011;
-	(*TC)[2] = 4;
-	(*TC)[3] = 2;
+	TC->Push({ Ops::MSet, 0, 0x1001 });
+	TC->Push({ Ops::MSet, 1, 0x1010 });
+	TC->Push({ Ops::MSet, 2, 4 });
+	TC->Push({ Ops::MSet, 3, 2 });
+	//(*TC)[0] = 0x1001;
+	//(*TC)[1] = 0x1011;
+	//(*TC)[2] = 4;
+	//(*TC)[3] = 2;
 
 	TC->Push({ Ops::Load,1,0 });
 	TC->Push({ Ops::Load,2,1 });
@@ -284,7 +364,7 @@ int main() {
 	TC->Push({ Ops::Div ,1,2 });
 	TC->Push({ Ops::Mod ,1 ,2 });
 
-	TC->Push({ Ops::Set ,3 ,0xbeef });
+	TC->Push({ Ops::RSet ,3 ,0xbeef });
 	TC->Push({ Ops::Hit ,3 ,2 });
 
 	TC->Push({ Ops::Int ,(TestCPU::Register)TestCPU::IntOps::ToEnd ,1 });
