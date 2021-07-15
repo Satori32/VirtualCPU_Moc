@@ -100,6 +100,8 @@ enum class Ops : std::uint8_t {
 	Mul,
 	Div,
 	Mod,
+	Inc,
+	Dec,
 	Address, //Addressing like a pointer.
 	HighLimit,//Clamp HighLimit.
 	LowLimit,//Clamp LowLimit.
@@ -220,6 +222,12 @@ public:
 			R[std::get<2>(N)] = A;
 			break;
 		}
+		case Ops::Inc:
+			 R[std::get<1>(N)]++;
+			break;
+		case Ops::Dec:
+			 R[std::get<1>(N)]--;
+			break;
 		case Ops::HighLimit:
 			R[0] = std::min(R[std::get<1>(N)] ,  R[std::get<2>(N)]);
 			break;
