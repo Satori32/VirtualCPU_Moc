@@ -5,6 +5,7 @@
 #include <tuple>
 #include <memory>
 #include <algorithm>
+#include <map>
 
 #include <iomanip> 
 
@@ -99,6 +100,7 @@ enum class Ops : std::uint8_t {
 	Mul,
 	Div,
 	Mod,
+	Address, //Addressing like a pointer.
 	HighLimit,//Clamp HighLimit.
 	LowLimit,//Clamp LowLimit.
 	Swap,// swap to register and register.
@@ -133,6 +135,8 @@ public:
 		DropStack,
 		DropCash,
 		ReWindPC,
+		SaveMemoryBlock,//lolololol;
+		LoadMemoryBlock,//lolololol;
 		ToEnd,
 
 	};
@@ -141,7 +145,8 @@ public:
 
 		VC->Initialize(RS, MS);
 		PC = 0;
-
+		LS.clear();
+		B.clear();
 	}
 	bool Update() {
 
@@ -171,6 +176,8 @@ public:
 		case Ops::MSet:
 			Memory[std::get<1>(N)] = std::get<2>(N);
 			break;
+		case Ops::Address:
+			R[0] = Memory[R[std::get<1>(N)]];
 		case Ops::And:
 			R[0] = R[std::get<1>(N)] & R[std::get<2>(N)];
 			break;
@@ -315,6 +322,15 @@ public:
 		case TestCPU::IntOps::ToEnd:
 			VirtualCPU::ToEnd = (Re != 0);
 			break;
+		case TestCPU::IntOps::SaveMemoryBlock:
+			B[Re] = Memory;
+			break;
+		case TestCPU::IntOps::LoadMemoryBlock:{
+			std::size_t L = Memory.size();
+			Memory=B[Re];
+			Memory.resize(L);
+			break;
+		}
 		case TestCPU::IntOps::ReWindPC:
 			PC = Re;
 			break;
@@ -337,6 +353,7 @@ public:
 		return PC;
 	}
 protected:
+	std::map<Register,std::vector<Register>> B;
 	std::vector < std::tuple<std::size_t, Register>> LS;//label stack.
 	std::size_t PC{ 0 };
 };
