@@ -136,6 +136,13 @@ public:
 		ToEnd,
 
 	};
+	bool Initialize(std::size_t RS,std::size_t MS) {//different to call this.
+		VirtualCPU* VC = this;
+
+		VC->Initialize(RS, MS);
+		PC = 0;
+
+	}
 	bool Update() {
 
 		if (Q.size() == 0) { return false; }
@@ -251,6 +258,7 @@ public:
 				for (auto& o : LS) {
 					if (std::get<1>(o) == std::get<2>(N)) {
 						PC = std::get<0>(o);
+						break;
 					}
 				}
 			}
@@ -260,6 +268,7 @@ public:
 				for (auto& o : LS) {
 					if (std::get<1>(o) == std::get<2>(N)) {
 						PC = std::get<0>(o);
+						break;
 					}
 				}
 			}
@@ -323,6 +332,9 @@ public:
 
 		}
 		return true;
+	}
+	std::size_t ProgramableCounter() {
+		return PC;
 	}
 protected:
 	std::vector < std::tuple<std::size_t, Register>> LS;//label stack.
