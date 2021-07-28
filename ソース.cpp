@@ -88,6 +88,7 @@ protected:
 
 enum class Ops : std::uint8_t {
 	Null = 0,
+	HALT,
 	And,
 	Or,
 	Not,
