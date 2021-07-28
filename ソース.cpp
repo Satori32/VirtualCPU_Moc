@@ -164,6 +164,8 @@ public:
 		{
 		case Ops::Null:
 			break;
+		case Ops::HALT:
+			break;
 		case Ops::Load:
 			R[std::get<1>(N)] = Memory[std::get<2>(N)];
 			break;
