@@ -103,6 +103,7 @@ enum class Ops : std::uint8_t {
 	Mod,
 	Inc,
 	Dec,
+	Bash,//Bash the something.
 	Address, //Addressing like a pointer.
 	HighLimit,//Clamp HighLimit.
 	LowLimit,//Clamp LowLimit.
@@ -165,6 +166,8 @@ public:
 		case Ops::Null:
 			break;
 		case Ops::HALT:
+			break;
+		case Ops::Bash://maybe alive usecase...
 			break;
 		case Ops::Load:
 			R[std::get<1>(N)] = Memory[std::get<2>(N)];
