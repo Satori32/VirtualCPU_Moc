@@ -103,6 +103,11 @@ enum class Ops : std::uint8_t {
 	Mod,
 	Inc,
 	Dec,
+	LSAdd,//[Value,Address]
+	LSSub,//[Value,Address]
+	LSMul,//[Value,Address]
+	LSDiv,//[Value,Address]
+	LSMod,//[Value,Address]
 	Bash,//Bash the something.
 	Address, //Addressing like a pointer.
 	HighLimit,//Clamp HighLimit.
@@ -228,6 +233,31 @@ public:
 			R[std::get<2>(N)] = A;
 			break;
 		}
+		case Ops::LSAdd:
+			R[0] = Memory[std::get<2>(N)];
+			R[0] += std::get<1>(N);
+			Memory[std::get<2>(N)] = R[0];
+			break;
+		case Ops::LSSub:
+			R[0] = Memory[std::get<2>(N)];
+			R[0] -= std::get<1>(N);
+			Memory[std::get<2>(N)] = R[0];
+			break;
+		case Ops::LSMul:
+			R[0] = Memory[std::get<2>(N)];
+			R[0] *= std::get<1>(N);
+			Memory[std::get<2>(N)] = R[0];
+			break;
+		case Ops::LSDiv:
+			R[0] = Memory[std::get<2>(N)];
+			R[0] /= std::get<1>(N);
+			Memory[std::get<2>(N)] = R[0];
+			break;
+		case Ops::LSMod:
+			R[0] = Memory[std::get<2>(N)];
+			R[0] %= std::get<1>(N);
+			Memory[std::get<2>(N)] = R[0];
+			break;
 		case Ops::Inc:
 			 R[std::get<1>(N)]++;
 			break;
